@@ -17,16 +17,21 @@ class BookCount:
 end BookCount
 
 class MaxProfit:
-  val hotel: List[String] = rows.map(row => row("Hotel Name"))
-  val hotelCount: Map[String, Int] = hotel.groupBy(identity).view.mapValues(_.size).toMap
-  val sortedHotelCount = ListMap(hotelCount.toSeq.sortBy(_._2): _*)
-
-  val profitMargin: List[String] = rows.map(row => row("Profit Margin"))
-  val profitMarginCount: Map[String, Int] = profitMargin.groupBy(identity).view.mapValues(_.size).toMap
-  val sortedProfitMarginCount = ListMap(profitMarginCount.toSeq.sortBy(_._2): _*)
-
-  def highestHotelCount(): Unit = println(sortedHotelCount.maxBy(_._2))
-  def highestProfitMarginCount(): Unit = println(sortedProfitMarginCount.maxBy(_._2))
+  //most profitable logic is sum of (visitor[default price of 100SGD] * profit margin) group by each hotel due to not considering booking price
+  //if count booking price, then can sum of (booking price * profit margin) for each visitor then group by hotel to get most profitable hotel
+  val filteredList: List[Map[String, String]] = rows.map { row =>
+    row.filter { case (key, _) => List("Hotel Name", "No. Of People", "Profit Margin").contains(key) }
+  }
+  val groupedList: Map[String, List[Map[String, String]]] = filteredList.groupBy(row => row("Hotel Name"))
+  var listOfHotelProfit: List[Map[String, Double]] = List()
+  for ((hotelName, dataRows) <- groupedList) {
+    val totalProfit = dataRows.map { row =>
+      row("No. Of People").toDouble * row("Profit Margin").toDouble
+    }.sum
+    val _hotelProfit: Map[String, Double] = Map(hotelName -> totalProfit)
+    listOfHotelProfit = listOfHotelProfit :+ _hotelProfit
+  }
+  listOfHotelProfit.foreach(println)
 end MaxProfit
 
 object Main extends App:
