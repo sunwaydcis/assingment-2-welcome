@@ -1,6 +1,9 @@
 import com.github.tototoshi.csv._
 
 object CsvReader {
+  val reader = CSVReader.open("src/main/resources/Hotel_Dataset.csv")
+  val rows: List[Map[String, String]] = reader.allWithHeaders()
+
   def read(): Unit =
     val reader = CSVReader.open("src/main/resources/Hotel_Dataset.csv")
     val rows: List[Map[String, String]] = reader.allWithHeaders()
