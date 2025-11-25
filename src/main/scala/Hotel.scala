@@ -12,6 +12,7 @@ object CsvReader {
     println(rows.head)
     println(rows.length)
   end read
+  def stop(): Unit = reader.close()
 }
 
 
