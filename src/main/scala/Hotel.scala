@@ -1,5 +1,6 @@
 import CsvReader.rows
 import com.github.tototoshi.csv.*
+import scala.collection.immutable.ListMap
 
 object CsvReader {
   val reader = CSVReader.open("src/main/resources/Hotel_Dataset.csv")
@@ -37,4 +38,6 @@ end MaxProfit
 object Main extends App:
   val question1 = new BookCount
   question1.highestBookingCount()
+
+  val question3 = new MaxProfit
 end Main
