@@ -20,5 +20,9 @@ object CsvReader {
 
 
 object Main extends App:
-  CsvReader.read()
+  //getting highest booking number group by country
+  val destinatedCountry: List[String] = rows.map(row => row("Destination Country"))
+  val countryCount: Map[String, Int] = destinatedCountry.groupBy(identity).view.mapValues(_.size).toMap
+
+  println(countryCount)
 end Main
