@@ -15,9 +15,11 @@ object CsvReader {
   def stop(): Unit = reader.close()
 }
 
-
-
-
+class BookCount:
+  val destinatedCountry: List[String] = rows.map(row => row("Destination Country"))
+  val countryCount: Map[String, Int] = destinatedCountry.groupBy(identity).view.mapValues(_.size).toMap
+  def highestBookingCount(): Unit = println(countryCount.head)
+end BookCount
 
 object Main extends App:
 
