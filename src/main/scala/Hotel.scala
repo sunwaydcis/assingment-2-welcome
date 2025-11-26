@@ -12,9 +12,7 @@ object CsvReader {
 class BookCount:
   val destinatedCountry: List[String] = rows.map(row => row("Destination Country"))
   val countryCount: Map[String, Int] = destinatedCountry.groupBy(identity).view.mapValues(_.size).toMap
-  val sortedCountryCount = ListMap(countryCount.toSeq.sortBy(_._2):_*)
-
-  def highestBookingCount(): Unit = println(sortedCountryCount.maxBy(_._2))
+  def highestBookingCount(): Unit = println(countryCount.maxBy(_._2))
 end BookCount
 
 class MaxEconomic:
