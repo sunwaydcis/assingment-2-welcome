@@ -32,7 +32,9 @@ class MaxProfit:
     val _hotelProfit: Map[String, Double] = Map(hotelName -> totalProfit)
     listOfHotelProfit = listOfHotelProfit :+ _hotelProfit
   }
-  listOfHotelProfit.foreach(println)
+  val sortedByValueAsc = ListMap(listOfHotelProfit.map(_.head).toSeq.sortBy(_._2): _*)
+
+  def mostProfitableHotel(): Unit = println(listOfHotelProfit.map(_.head).maxBy(_._2))
 end MaxProfit
 
 object Main extends App:
