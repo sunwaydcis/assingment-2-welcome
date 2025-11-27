@@ -14,6 +14,9 @@ trait FilteringDatasets:
     rows.map { row =>
       row.filter { case (key, _) => filteredMap.contains(key) }
     }
+
+  def group(groupingMap: String): Map[String, List[Map[String, String]]] =
+    rows.groupBy(row => row(groupingMap))
 end FilteringDatasets
 
 class BookCount extends FilteringDatasets:
