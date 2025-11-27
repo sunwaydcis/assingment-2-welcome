@@ -37,9 +37,8 @@ class MaxEconomic extends FilteringDatasets:
     val _economicHotel: Map[String, Double] = Map(hotelName -> economicRanking)
     listOfEconomicalHotel = listOfEconomicalHotel :+ _economicHotel
   }
-  val sortedEconomicHotel = ListMap(listOfEconomicalHotel.map(_.head).toSeq.sortBy(_._2): _*)
-
-  def mostEconomicalHotel(): Unit = println(listOfEconomicalHotel.map(_.head).minBy(_._2))
+  
+  def mostEconomicalHotel(): Unit = println(listOfHotel.map(_.head).minBy(_._2))
 end MaxEconomic
 
 class MaxProfit extends FilteringDatasets:
