@@ -20,8 +20,8 @@ trait FilteringDatasets:
     rows.groupBy(row => row(groupingMap))
 end FilteringDatasets
 
-class BookCount extends FilteringDatasets:
-  val filteredList: List[String] = filter(List("Destination Country")).flatMap(_.values)
+class MaxBookCount extends FilteringDatasets:
+  val filteredList: List[String] = filter("Hotel Name")
   val countryCount: Map[String, Int] = filteredList.groupBy(identity).view.mapValues(_.size).toMap
 
   def highestBookingCount(): Unit = println(countryCount.maxBy(_._2))
