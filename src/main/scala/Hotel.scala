@@ -23,12 +23,11 @@ class BookCount extends FilteringDatasets:
   def highestBookingCount(): Unit = println(countryCount.maxBy(_._2))
 end BookCount
 
-class MaxEconomic:
+class MaxEconomic extends FilteringDatasets:
   //is the booking price discounted already or prediscount
   //if so, then we use (booking price / 1 + discount) * profit margin
-  val filteredList: List[Map[String, String]] = rows.map { row =>
-    row.filter { case (key, _) => List("Hotel Name", "Booking Price[SGD]", "Discount", "Profit Margin").contains(key) }
-  }
+  val filteredList: List[Map[String, String]] = filter(List("Hotel Name", "Booking Price[SGD]", "Discount", "Profit Margin"))
+
   val groupedList: Map[String, List[Map[String, String]]] = filteredList.groupBy(row => row("Hotel Name"))
   var listOfEconomicalHotel: List[Map[String, Double]] = List()
   for ((hotelName, dataRows) <- groupedList) {
@@ -43,12 +42,10 @@ class MaxEconomic:
   def mostEconomicalHotel(): Unit = println(listOfEconomicalHotel.map(_.head).minBy(_._2))
 end MaxEconomic
 
-class MaxProfit:
+class MaxProfit extends FilteringDatasets:
   //most profitable logic is sum of (visitor[default price of 100SGD] * profit margin) group by each hotel due to not considering booking price
   //if count booking price, then can sum of (booking price * profit margin) for each visitor then group by hotel to get most profitable hotel
-  val filteredList: List[Map[String, String]] = rows.map { row =>
-    row.filter { case (key, _) => List("Hotel Name", "No. Of People", "Profit Margin").contains(key) }
-  }
+  val filteredList: List[Map[String, String]] = filter(List("Hotel Name", "No. Of People", "Profit Margin"))
   val groupedList: Map[String, List[Map[String, String]]] = filteredList.groupBy(row => row("Hotel Name"))
   var listOfHotelProfit: List[Map[String, Double]] = List()
   for ((hotelName, dataRows) <- groupedList) {
