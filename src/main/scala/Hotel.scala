@@ -2,12 +2,11 @@ import CsvReader.rows
 import com.github.tototoshi.csv.*
 import scala.collection.immutable.ListMap
 
-object CsvReader {
-  val reader = CSVReader.open("src/main/resources/Hotel_Dataset.csv")
-  val rows: List[Map[String, String]] = reader.allWithHeaders()
-
-  def stop(): Unit = reader.close()
-}
+class CsvReader(val filePath: String):
+  private val reader = CSVReader.open(filePath)
+  private val rows: List[Map[String, String]] = reader.allWithHeaders()
+  def getData: List[Map[String, String]] = rows
+end CsvReader
 
 trait FilteringDatasets:
   def filter(filteredMap: List[String]): List[Map[String, String]] =
