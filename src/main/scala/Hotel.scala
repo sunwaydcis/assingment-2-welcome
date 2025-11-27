@@ -14,6 +14,7 @@ trait FilteringDatasets:
     rows.map { row =>
       row.filter { case (key, _) => filteredMap.contains(key) }
     }
+  def filter(filteredMap: String): List[String] = rows.map(row => row(filteredMap))
 
   def group(groupingMap: String): Map[String, List[Map[String, String]]] =
     rows.groupBy(row => row(groupingMap))
