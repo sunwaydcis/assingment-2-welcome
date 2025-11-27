@@ -9,8 +9,15 @@ object CsvReader {
   def stop(): Unit = reader.close()
 }
 
-class BookCount:
-  val destinatedCountry: List[String] = rows.map(row => row("Destination Country"))
+trait FilteringDatasets:
+  def filter(filteredMap: List[String]): List[Map[String, String]] =
+    rows.map { row =>
+      row.filter { case (key, _) => filteredMap.contains(key) }
+    }
+end FilteringDatasets
+
+class BookCount extends FilteringDatasets:
+  val destinatedCountry: List[String] = filter(List("Destination Country")).flatMap(_.values)
   val countryCount: Map[String, Int] = destinatedCountry.groupBy(identity).view.mapValues(_.size).toMap
 
   def highestBookingCount(): Unit = println(countryCount.maxBy(_._2))
