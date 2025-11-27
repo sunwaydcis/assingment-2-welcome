@@ -26,7 +26,7 @@ class MaxEconomic:
   var listOfEconomicalHotel: List[Map[String, Double]] = List()
   for ((hotelName, dataRows) <- groupedList) {
     val economicRanking = dataRows.map { row =>
-      (row("Booking Price[SGD]").toDouble / (1 + row("Discount").stripSuffix("%").toDouble / 100)) * row("Profit Margin").toDouble
+      (row("Booking Price[SGD]").toDouble / (1 - row("Discount").stripSuffix("%").toDouble / 100)) * row("Profit Margin").toDouble
     }.sum
     val _economicHotel: Map[String, Double] = Map(hotelName -> economicRanking)
     listOfEconomicalHotel = listOfEconomicalHotel :+ _economicHotel
