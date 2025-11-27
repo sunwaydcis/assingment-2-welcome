@@ -9,6 +9,8 @@ class CsvReader(val filePath: String):
 end CsvReader
 
 trait FilteringDatasets:
+  val rows: List[Map[String, String]] = new CsvReader("src/main/resources/Hotel_Dataset.csv").getData
+  
   def filter(filteredMap: List[String]): List[Map[String, String]] =
     rows.map { row =>
       row.filter { case (key, _) => filteredMap.contains(key) }
