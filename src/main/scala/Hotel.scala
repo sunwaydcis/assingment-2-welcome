@@ -1,5 +1,36 @@
 import com.github.tototoshi.csv.*
 
+//store the dataset into case class
+//naming convention
+// normalization
+
+case class HotelDataset(
+  bookingID: String,
+  dateOfBooking: String,
+  time: String,
+  customerID: String,
+  gender: String,
+  age: Int,
+  originCountry: String,
+  state: String,
+  location: String,
+  destinationCountry: String,
+  destinationCity: String,
+  numberOfPeople: Int,
+  checkInDate: String,
+  numberOfDays: Int,
+  checkOutDate: String,
+  rooms: Int,
+  hotelName: String,
+  hotelRating: Double,
+  paymentMode: String,
+  bankName: String,
+  bookingPrice: Double,
+  discount: String,
+  gst: Double,
+  profitMargin: Double
+)
+
 class CsvReader(val filePath: String):
   private val reader = CSVReader.open(filePath)
   private val rows: List[Map[String, String]] = reader.allWithHeaders()
