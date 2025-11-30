@@ -97,7 +97,7 @@ class MaxEconomic(val rows: List[HotelDataset]) extends FilteringDatasets:
     name,
     1 - ((v1 - minPrice) / (maxPrice - minPrice)),
     (v2 - minDiscount) / (maxDiscount - minDiscount),
-    1 - (v2 - minMargin) / (maxMargin - minMargin)
+    1 - (v3 - minMargin) / (maxMargin - minMargin)
   )}
 
   val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
