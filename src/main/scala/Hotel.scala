@@ -105,7 +105,7 @@ class MaxEconomic(val rows: List[HotelDataset]) extends FilteringDatasets:
     name -> totalScore
   }
 
-  def printMostEconomicHotel(): Unit = println(ranking.max)
+  def printMostEconomicHotel(): Unit = println(ranking.maxBy(_._2))
 end MaxEconomic
 
 class MaxProfit(val rows: List[HotelDataset]) extends FilteringDatasets:
@@ -129,8 +129,7 @@ class MaxProfit(val rows: List[HotelDataset]) extends FilteringDatasets:
     name -> totalScore
   }
 
-  def printMostProfitableHotel(): Unit = println(ranking.max)
-
+  def printMostProfitableHotel(): Unit = println(ranking.maxBy(_._2))
 end MaxProfit
 
 object Main extends App:
