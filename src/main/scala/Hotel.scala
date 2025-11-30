@@ -1,7 +1,6 @@
 import com.github.tototoshi.csv.*
 import scala.language.postfixOps
 
-// normalization
 case class HotelDataset(
   bookingID: String,
   dateOfBooking: String,
@@ -75,32 +74,32 @@ trait FilteringDatasets:
 end FilteringDatasets
 
 class MaxBookCount(val rows: List[HotelDataset]) extends FilteringDatasets:
-  val filteredList: List[String] = filterColumn(_.destinationCountry)
-  val countryCount: Map[String, Int] = filteredList.groupBy(identity).view.mapValues(_.size).toMap
+  private val filteredList: List[String] = filterColumn(_.destinationCountry)
+  private val countryCount: Map[String, Int] = filteredList.groupBy(identity).view.mapValues(_.size).toMap
 
   def printHighestBookingCount(): Unit = println(countryCount.maxBy(_._2))
 end MaxBookCount
 
 class MaxEconomic(val rows: List[HotelDataset]) extends FilteringDatasets:
-  val filteredList: List[(String, Double, Double, Double)] = filterColumn(row => (row.hotelName, row.bookingPrice, row.discount, row.profitMargin))
-  val sortedList: List[(String, Double, Double, Double)] = filteredList.sortBy(_._2).sortBy(_._1)
+  private val filteredList: List[(String, Double, Double, Double)] = filterColumn(row => (row.hotelName, row.bookingPrice, row.discount, row.profitMargin))
+  private val sortedList: List[(String, Double, Double, Double)] = filteredList.sortBy(_._2).sortBy(_._1)
 
-  val minPrice: Double = sortedList.map(_._2).min
-  val maxPrice: Double = sortedList.map(_._2).max
-  val minDiscount: Double = sortedList.map(_._3).min
-  val maxDiscount: Double = sortedList.map(_._3).max
+  private val minPrice: Double = sortedList.map(_._2).min
+  private val maxPrice: Double = sortedList.map(_._2).max
+  private val minDiscount: Double = sortedList.map(_._3).min
+  private val maxDiscount: Double = sortedList.map(_._3).max
 
-  val minMargin: Double = sortedList.map(_._4).min
-  val maxMargin: Double = sortedList.map(_._4).max
+  private val minMargin: Double = sortedList.map(_._4).min
+  private val maxMargin: Double = sortedList.map(_._4).max
 
-  val normalized: List[(String, Double, Double, Double)] = sortedList.map { case (name, v1, v2, v3) => (
+  private val normalized: List[(String, Double, Double, Double)] = sortedList.map { case (name, v1, v2, v3) => (
     name,
     1 - ((v1 - minPrice) / (maxPrice - minPrice)),
     (v2 - minDiscount) / (maxDiscount - minDiscount),
     1 - (v3 - minMargin) / (maxMargin - minMargin)
   )}
 
-  val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
+  private val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
     val totalScore = tuples.map { case (_, v1, v2, v3) => v1 + v2 + v3}.sum
     name -> totalScore
   }
@@ -109,22 +108,22 @@ class MaxEconomic(val rows: List[HotelDataset]) extends FilteringDatasets:
 end MaxEconomic
 
 class MaxProfit(val rows: List[HotelDataset]) extends FilteringDatasets:
-  val filteredList: List[(String, Double, Double)] = filterColumn(row => (row.hotelName, row.numberOfPeople, row.profitMargin))
-  val sortedList: List[(String, Double, Double)] = filteredList.sortBy(_._3).sortBy(_._2).sortBy(_._1)
+  private val filteredList: List[(String, Double, Double)] = filterColumn(row => (row.hotelName, row.numberOfPeople, row.profitMargin))
+  private val sortedList: List[(String, Double, Double)] = filteredList.sortBy(_._3).sortBy(_._2).sortBy(_._1)
 
-  val minPeople: Double = sortedList.map(_._2).min
-  val maxPeople: Double = sortedList.map(_._2).max
+  private val minPeople: Double = sortedList.map(_._2).min
+  private val maxPeople: Double = sortedList.map(_._2).max
 
-  val minMargin: Double = sortedList.map(_._3).min
-  val maxMargin: Double = sortedList.map(_._3).max
+  private val minMargin: Double = sortedList.map(_._3).min
+  private val maxMargin: Double = sortedList.map(_._3).max
 
-  val normalized: List[(String, Double, Double)] = sortedList.map { case (name, v1, v2) => (
+  private val normalized: List[(String, Double, Double)] = sortedList.map { case (name, v1, v2) => (
     name,
     (v1 - minPeople) / (maxPeople - minPeople),
     (v2 - minMargin) / (maxMargin - minMargin)
   )}
 
-  val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
+  private val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
     val totalScore = tuples.map { case (_, v1, v2) => v1 + v2 }.sum
     name -> totalScore
   }
@@ -142,5 +141,4 @@ object Main extends App:
   question1.printHighestBookingCount()
   question2.printMostEconomicHotel()
   question3.printMostProfitableHotel()
-
 end Main
