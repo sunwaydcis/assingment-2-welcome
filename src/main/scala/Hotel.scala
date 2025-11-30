@@ -85,6 +85,23 @@ class MaxBookCount(val rows: List[HotelDataset]) extends FilteringDatasets:
 end MaxBookCount
 
 class MaxEconomic(val rows: List[HotelDataset]) extends FilteringDatasets:
+  val filteredList: List[(String, Double, Double, Double)] = filterColumn(row => (row.hotelName, row.bookingPrice, row.discount, row.profitMargin))
+  val sortedList: List[(String, Double, Double, Double)] = filteredList.sortBy(_._2).sortBy(_._1)
+
+  val minPrice: Double = sortedList.map(_._2).min
+  val maxPrice: Double = sortedList.map(_._2).max
+  val minDiscount: Double = sortedList.map(_._3).min
+  val maxDiscount: Double = sortedList.map(_._3).max
+
+  val minMargin: Double = sortedList.map(_._4).min
+  val maxMargin: Double = sortedList.map(_._4).max
+
+  val normalized: List[(String, Double, Double, Double)] = sortedList.map { case (name, v1, v2, v3) => (
+    name,
+    1 - ((v1 - minPrice) / (maxPrice - minPrice)),
+    (v2 - minDiscount) / (maxDiscount - minDiscount),
+    1 - (v2 - minMargin) / (maxMargin - minMargin)
+  )}
 
 end MaxEconomic
 
