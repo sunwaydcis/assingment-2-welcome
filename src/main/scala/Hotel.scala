@@ -89,6 +89,27 @@ class MaxEconomic(val rows: List[HotelDataset]) extends FilteringDatasets:
 end MaxEconomic
 
 class MaxProfit(val rows: List[HotelDataset]) extends FilteringDatasets:
+  val filteredList: List[(String, Double, Double)] = filterColumn(row => (row.hotelName, row.numberOfPeople, row.profitMargin))
+  val sortedList: List[(String, Double, Double)] = filteredList.sortBy(_._3).sortBy(_._2).sortBy(_._1)
+
+  val minPeople: Double = sortedList.map(_._2).min
+  val maxPeople: Double = sortedList.map(_._2).max
+
+  val minMargin: Double = sortedList.map(_._3).min
+  val maxMargin: Double = sortedList.map(_._3).max
+
+  val normalized: List[(String, Double, Double)] = sortedList.map { case (name, v1, v2) => (
+    name,
+    (v1 - minPeople) / (maxPeople - minPeople),
+    (v2 - minMargin) / (maxMargin - minMargin)
+  )}
+
+  val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
+    val totalScore = tuples.map { case (_, v1, v2) => v1 + v2 }.sum
+    name -> totalScore
+  }
+
+  def printMostProfitableHotel: Unit = println(ranking.max)
 
 end MaxProfit
 
