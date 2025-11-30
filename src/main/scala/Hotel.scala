@@ -1,10 +1,7 @@
 import com.github.tototoshi.csv.*
 import scala.language.postfixOps
 
-//store the dataset into case class
-//naming convention
 // normalization
-
 case class HotelDataset(
   bookingID: String,
   dateOfBooking: String,
@@ -103,6 +100,12 @@ class MaxEconomic(val rows: List[HotelDataset]) extends FilteringDatasets:
     1 - (v2 - minMargin) / (maxMargin - minMargin)
   )}
 
+  val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
+    val totalScore = tuples.map { case (_, v1, v2, v3) => v1 + v2 + v3}.sum
+    name -> totalScore
+  }
+
+  def printMostEconomicHotel(): Unit = println(ranking.max)
 end MaxEconomic
 
 class MaxProfit(val rows: List[HotelDataset]) extends FilteringDatasets:
@@ -126,7 +129,7 @@ class MaxProfit(val rows: List[HotelDataset]) extends FilteringDatasets:
     name -> totalScore
   }
 
-  def printMostProfitableHotel: Unit = println(ranking.max)
+  def printMostProfitableHotel(): Unit = println(ranking.max)
 
 end MaxProfit
 
@@ -138,5 +141,7 @@ object Main extends App:
   val question3 = new MaxProfit(dataset)
 
   question1.printHighestBookingCount()
+  question2.printMostEconomicHotel()
+  question3.printMostProfitableHotel()
 
 end Main
