@@ -28,7 +28,7 @@ case class HotelDataset(
   profitMargin: Double
 )
 
-class CsvReader(val filePath: String):
+class CsvReader[T](val filePath: String):
   private val reader = CSVReader.open(filePath)
   private val rows: List[Map[String, String]] = reader.allWithHeaders()
 
@@ -73,14 +73,20 @@ trait FilteringDatasets:
   def filterColumn[T](filteredKey: HotelDataset => T): List[T] = rows.map(filteredKey)
 end FilteringDatasets
 
-class MaxBookCount(val rows: List[HotelDataset]) extends FilteringDatasets:
-  private val filteredList: List[String] = filterColumn(_.destinationCountry)
-  private val countryCount: Map[String, Int] = filteredList.groupBy(identity).view.mapValues(_.size).toMap
+abstract class HotelEDA(val rows: List[HotelDataset]) extends FilteringDatasets:
+  def rankingDataset(): Map[String, Double]
+  def printResult(): Unit = println(rankingDataset().maxBy(_._2))
+end HotelEDA
 
-  def printHighestBookingCount(): Unit = println(countryCount.maxBy(_._2))
+class MaxBookCount(rows: List[HotelDataset]) extends HotelEDA(rows):
+  private val filteredList: List[String] = filterColumn(_.destinationCountry)
+
+  override def rankingDataset(): Map[String, Double] =
+    val countryCount: Map[String, Double] = filteredList.groupBy(identity).view.mapValues(_.size.toDouble).toMap
+    countryCount
 end MaxBookCount
 
-class MaxEconomic(val rows: List[HotelDataset]) extends FilteringDatasets:
+class MaxEconomic(rows: List[HotelDataset]) extends HotelEDA(rows):
   private val filteredList: List[(String, Double, Double, Double)] = filterColumn(row => (row.hotelName, row.bookingPrice, row.discount, row.profitMargin))
   private val sortedList: List[(String, Double, Double, Double)] = filteredList.sortBy(_._2).sortBy(_._1)
 
@@ -99,15 +105,15 @@ class MaxEconomic(val rows: List[HotelDataset]) extends FilteringDatasets:
     1 - (v3 - minMargin) / (maxMargin - minMargin)
   )}
 
-  private val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
-    val totalScore = tuples.map { case (_, v1, v2, v3) => v1 + v2 + v3}.sum
-    name -> totalScore
-  }
-
-  def printMostEconomicHotel(): Unit = println(ranking.maxBy(_._2))
+  override def rankingDataset(): Map[String, Double] =
+    val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
+      val totalScore = tuples.map { case (_, v1, v2, v3) => v1 + v2 + v3 }.sum
+      name -> totalScore
+    }
+    ranking
 end MaxEconomic
 
-class MaxProfit(val rows: List[HotelDataset]) extends FilteringDatasets:
+class MaxProfit(rows: List[HotelDataset]) extends HotelEDA(rows):
   private val filteredList: List[(String, Double, Double)] = filterColumn(row => (row.hotelName, row.numberOfPeople, row.profitMargin))
   private val sortedList: List[(String, Double, Double)] = filteredList.sortBy(_._3).sortBy(_._2).sortBy(_._1)
 
@@ -123,22 +129,22 @@ class MaxProfit(val rows: List[HotelDataset]) extends FilteringDatasets:
     (v2 - minMargin) / (maxMargin - minMargin)
   )}
 
-  private val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
-    val totalScore = tuples.map { case (_, v1, v2) => v1 + v2 }.sum
-    name -> totalScore
-  }
-
-  def printMostProfitableHotel(): Unit = println(ranking.maxBy(_._2))
+  override def rankingDataset(): Map[String, Double] =
+    val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
+      val totalScore = tuples.map { case (_, v1, v2) => v1 + v2 }.sum
+      name -> totalScore
+    }
+    ranking
 end MaxProfit
 
 object Main extends App:
   val dataset = new CsvReader("src/main/resources/Hotel_Dataset.csv").recordData
 
-  val question1 = new MaxBookCount(dataset)
-  val question2 = new MaxEconomic(dataset)
-  val question3 = new MaxProfit(dataset)
+  val analytics: List[HotelEDA] = List(
+    new MaxBookCount(dataset),
+    new MaxEconomic(dataset),
+    new MaxProfit(dataset)
+  )
 
-  question1.printHighestBookingCount()
-  question2.printMostEconomicHotel()
-  question3.printMostProfitableHotel()
+  analytics.foreach(_.printResult())
 end Main
