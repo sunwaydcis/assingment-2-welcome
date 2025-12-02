@@ -76,13 +76,10 @@ end FilteringDatasets
 abstract class HotelEDA(val rows: List[HotelDataset], val questionTitle: String)
   extends FilteringDatasets:
 
-  /** Map from “label” (country / hotel) → score */
   def rankingDataset(): Map[String, Double]
 
-  /** Best entry (used by all subclasses) */
   def bestAnswer: (String, Double) = rankingDataset().maxBy(_._2)
 
-  /** Default pretty print – can be overridden */
   def printResult(): Unit =
     val (label, value) = bestAnswer
     println("========================================")
