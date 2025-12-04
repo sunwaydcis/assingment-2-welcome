@@ -28,7 +28,7 @@ case class HotelDataset(
   profitMargin: Double
 )
 
-class CsvReader[T](val filePath: String):
+class CsvReader(val filePath: String):
   private val reader = CSVReader.open(filePath)
   private val rows: List[Map[String, String]] = reader.allWithHeaders()
 
