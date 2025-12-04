@@ -73,6 +73,12 @@ trait FilteringDatasets:
   def filterColumn[T](filteredKey: HotelDataset => T): List[T] = rows.map(filteredKey)
 end FilteringDatasets
 
+trait Normalization:
+  def normalize(min: Double, max: Double, value: Double): Double = (value - min) / (max - min)
+end Normalization
+
+
+
 abstract class HotelEDA(val rows: List[HotelDataset]) extends FilteringDatasets:
   def rankingDataset(): Map[String, Double]
   def printResult(): Unit = println(rankingDataset().maxBy(_._2))
