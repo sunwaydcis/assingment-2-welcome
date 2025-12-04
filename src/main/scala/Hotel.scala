@@ -67,6 +67,8 @@ class CsvReader(val filePath: String):
   def recordData: List[HotelDataset] = caseClassDataset
 end CsvReader
 
+
+
 trait FilteringDatasets:
   val rows: List[HotelDataset]
 
@@ -80,9 +82,12 @@ end Normalization
 
 
 abstract class HotelEDA(val rows: List[HotelDataset]) extends FilteringDatasets:
-  def rankingDataset(): Map[String, Double]
+  def rankingDataset(): Map[_, Double]
   def printResult(): Unit = println(rankingDataset().maxBy(_._2))
 end HotelEDA
+
+
+
 
 class MaxBookCount(rows: List[HotelDataset]) extends HotelEDA(rows):
   private val filteredList: List[String] = filterColumn(_.destinationCountry)
@@ -92,36 +97,48 @@ class MaxBookCount(rows: List[HotelDataset]) extends HotelEDA(rows):
     countryCount
 end MaxBookCount
 
-class MaxEconomic(rows: List[HotelDataset]) extends HotelEDA(rows):
-  private val filteredList: List[(String, Double, Double, Double)] = filterColumn(row => (row.hotelName, row.bookingPrice, row.discount, row.profitMargin))
-  private val sortedList: List[(String, Double, Double, Double)] = filteredList.sortBy(_._2).sortBy(_._1)
+class MaxEconomic(rows: List[HotelDataset]) extends HotelEDA(rows) with Normalization:
+  private val filteredList: List[(String, String, String, Double, Double, Double)] = filterColumn(row => (row.hotelName, row.destinationCountry, row.destinationCity, row.bookingPrice, row.discount, row.profitMargin))
 
-  private val minPrice: Double = sortedList.map(_._2).min
-  private val maxPrice: Double = sortedList.map(_._2).max
-  private val minDiscount: Double = sortedList.map(_._3).min
-  private val maxDiscount: Double = sortedList.map(_._3).max
+  private val groupedAndAggregatedList: Map[(String, String, String), (Double, Double, Double)] = filteredList.groupBy { case (hotel, country, city, _, _, _) =>
+    (hotel, country, city)
+  }.view.mapValues { row =>
+    val avgPrice = row.map(_._4).sum / row.size
+    val avgDiscount = row.map(_._5).sum / row.size
+    val avgProfit = row.map(_._6).sum / row.size
+    (avgPrice, avgDiscount, avgProfit)
+  }.toMap
 
-  private val minMargin: Double = sortedList.map(_._4).min
-  private val maxMargin: Double = sortedList.map(_._4).max
+  private val minPrice: Double = groupedAndAggregatedList.values.map(_._1).min
+  private val maxPrice: Double = groupedAndAggregatedList.values.map(_._1).max
 
-  private val normalized: List[(String, Double, Double, Double)] = sortedList.map { case (name, v1, v2, v3) => (
-    name,
-    1 - ((v1 - minPrice) / (maxPrice - minPrice)),
-    (v2 - minDiscount) / (maxDiscount - minDiscount),
-    1 - (v3 - minMargin) / (maxMargin - minMargin)
-  )}
+  private val minDiscount: Double = groupedAndAggregatedList.values.map(_._2).min
+  private val maxDiscount: Double = groupedAndAggregatedList.values.map(_._2).max
 
-  override def rankingDataset(): Map[String, Double] =
-    val ranking: Map[String, Double] = normalized.groupBy(_._1).map { case (name, tuples) =>
-      val totalScore = tuples.map { case (_, v1, v2, v3) => v1 + v2 + v3 }.sum
-      name -> totalScore
-    }
+  private val minMargin: Double = groupedAndAggregatedList.values.map(_._3).min
+  private val maxMargin: Double = groupedAndAggregatedList.values.map(_._3).max
+
+  private val normalizedList: Map[(String, String, String), (Double, Double, Double)] =
+    groupedAndAggregatedList.view.mapValues { case (bookingPrice, discount, profitMargin) =>
+      val normalizedPrice = 1 - normalize(minPrice, maxPrice, bookingPrice)
+      val normalizedDiscount = normalize(minDiscount, maxDiscount, discount)
+      val normalizedMargin = 1 - normalize(minMargin, maxMargin, profitMargin)
+      (normalizedPrice, normalizedDiscount, normalizedMargin)
+    }.toMap
+
+  override def rankingDataset(): Map[(String, String, String), Double] =
+    val ranking: Map[(String, String, String), Double] =
+      normalizedList.view.mapValues { case (bookingPrice, discount, profitMargin) =>
+        val score = (bookingPrice + discount + profitMargin) / 3
+        score
+      }.toMap
     ranking
 end MaxEconomic
 
 class MaxProfit(rows: List[HotelDataset]) extends HotelEDA(rows) with Normalization:
   private val filteredList: List[(String, String, String, Double, Double)] = filterColumn(row =>
     (row.hotelName, row.destinationCountry, row.destinationCity, row.numberOfPeople, row.profitMargin))
+
   private val groupedAndAggregatedList: Map[(String, String, String), (Double, Double)] = filteredList.groupBy { case (hotel, country, city, _, _) =>
     (hotel, country, city)
   }.view.mapValues { row =>
@@ -129,20 +146,24 @@ class MaxProfit(rows: List[HotelDataset]) extends HotelEDA(rows) with Normalizat
     val avgProfit = row.map(_._5).sum / row.size
     (totalPeople, avgProfit)
   }.toMap
+
   private val minPeople: Double = groupedAndAggregatedList.values.map(_._1).min
   private val maxPeople: Double = groupedAndAggregatedList.values.map(_._1).max
+
   private val minMargin: Double = groupedAndAggregatedList.values.map(_._2).min
   private val maxMargin: Double = groupedAndAggregatedList.values.map(_._2).max
-  private val normalizedList: Map[(String, String, String), (Double, Double)] = 
+
+  private val normalizedList: Map[(String, String, String), (Double, Double)] =
     groupedAndAggregatedList.view.mapValues { case (numOfPeople, profitMargin) =>
       val normalizedPeople = normalize(minPeople, maxPeople, numOfPeople)
       val normalizedMargin = normalize(minMargin, maxMargin, profitMargin)
       (normalizedPeople, normalizedMargin)
     }.toMap
+
   override def rankingDataset(): Map[(String, String, String), Double] =
-    val ranking: Map[(String, String, String), Double] = 
+    val ranking: Map[(String, String, String), Double] =
       normalizedList.view.mapValues { case (numOfPeople, profitMargin) =>
-        val score = numOfPeople + profitMargin
+        val score = (numOfPeople + profitMargin) / 2
         score
       }.toMap
     ranking
