@@ -2,6 +2,7 @@ import com.github.tototoshi.csv.*
 import java.net.URL
 import scala.language.postfixOps
 
+//case class can ensure the access to dataset even after modification
 case class HotelDataset(
   bookingID: String,
   dateOfBooking: String,
@@ -29,10 +30,14 @@ case class HotelDataset(
   profitMargin: Double
 )
 
+//CsvReader class to encapsulate Csv file reading
 class CsvReader(val datasetURL: URL):
+  //totoshi CSV don't support java.net.URL, thus need to parse it.
+  //ISO-8859-1 is used to prevent java.nio.charset.MalformedInputException: Input length = 1 bc dataset contain special character
   private val reader = CSVReader.open(scala.io.Source.fromURL(datasetURL, "ISO-8859-1"))
   private val rows = reader.allWithHeaders()
 
+  //parsing the dataset into case class
   private def parseIntoCaseClass(dataset: Map[String, String]): HotelDataset =
     val parsedDataset: HotelDataset = new HotelDataset(
       bookingID          = dataset("Booking ID"),
@@ -69,25 +74,32 @@ class CsvReader(val datasetURL: URL):
 end CsvReader
 
 
-
+//a trait for filtering specific columns of the case class
 trait FilteringDatasets:
   val rows: List[HotelDataset]
 
+  //it takes a function that turns HotelDataset into any type
   def filterColumn[T](filteredKey: HotelDataset => T): List[T] = rows.map(filteredKey)
 end FilteringDatasets
 
+//a trait that grants subtype with normalizing logic
 trait Normalization:
+  //upperbound K, V to product to gain better access to tuples
   def normalize[K, V <: Product](data: Map[K, V]): Map[K, List[Double]] =
     val listData: Map[K, List[Double]] = data.map { case (k, v) =>
+      //using productIterator to iterate through each tuple and cast them to a list
+      //List provides a better indexing calculation
       k -> v.productIterator.map(_.asInstanceOf[Double]).toList
     }
 
+    //transpose to turn the row into column, i.e. (price, margin), (price, margin) into (price, price), (margin, margin)
     val columns: List[List[Double]] = listData.values.toList.transpose
 
     val mins: List[Double] = columns.map(_.min)
     val maxs: List[Double] = columns.map(_.max)
 
     listData.map { case (k, values) =>
+      //indexing the list to allow easier calculation
       val normalizedValues = values.zipWithIndex.map { case (v, i) =>
         (v - mins(i)) / (maxs(i) - mins(i))
       }
@@ -96,8 +108,8 @@ trait Normalization:
 end Normalization
 
 
-
 abstract class HotelEDA(val rows: List[HotelDataset]) extends FilteringDatasets:
+  //create an output with universal key, as key can be in any type
   def rankingDataset(): Map[_, Double]
   def printResult(): Unit = println(rankingDataset().maxBy(_._2))
 end HotelEDA
@@ -108,6 +120,7 @@ class MaxBookCount(rows: List[HotelDataset]) extends HotelEDA(rows):
   private val filteredList: List[String] = filterColumn(_.destinationCountry)
 
   override def rankingDataset(): Map[String, Double] =
+    //directly group by country name and count them
     val countryCount: Map[String, Double] = filteredList.groupBy(identity).view.mapValues(_.size.toDouble).toMap
     countryCount
 end MaxBookCount
@@ -116,7 +129,8 @@ class MaxEconomic(rows: List[HotelDataset]) extends HotelEDA(rows) with Normaliz
   private val filteredList: List[(String, String, String, Double, Double, Double)] =
     filterColumn(row => (row.hotelName, row.destinationCountry, row.destinationCity, row.bookingPrice, row.profitMargin, row.discount))
 
-  private val groupedAndAggregatedList: Map[(String, String, String), (Double, Double, Double)] =
+  private val groupedAndAggregatedList: Map[(String, String, String), (Double, Double, Double)] = {
+    //group the list by a composite key to get unique hotel, _ acts as a placeholder
     filteredList.groupBy { case (hotel, country, city, _, _, _) =>
       (hotel, country, city)
     }.view.mapValues { row =>
@@ -125,10 +139,11 @@ class MaxEconomic(rows: List[HotelDataset]) extends HotelEDA(rows) with Normaliz
       val avgProfit = row.map(_._6).sum / row.size
       (avgPrice, avgDiscount, avgProfit)
     }.toMap
+  }
 
   private val normalizedList: Map[(String, String, String), List[Double]] =
     normalize(groupedAndAggregatedList).map { case (k, values) =>
-      // Reverse the first 2 elements, keep the 3rd as is
+      //reversing data normalization for booking price and profit margin as lower is better
       val reversed = values.zipWithIndex.map { case (v, i) =>
         if (i < 2) 1.0 - v else v
       }
