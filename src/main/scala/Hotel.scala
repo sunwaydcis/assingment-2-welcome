@@ -1,4 +1,5 @@
 import com.github.tototoshi.csv.*
+import java.net.URL
 import scala.language.postfixOps
 
 case class HotelDataset(
@@ -28,9 +29,9 @@ case class HotelDataset(
   profitMargin: Double
 )
 
-class CsvReader(val filePath: String):
-  private val reader = CSVReader.open(filePath)
-  private val rows: List[Map[String, String]] = reader.allWithHeaders()
+class CsvReader(val datasetURL: URL):
+  private val reader = CSVReader.open(scala.io.Source.fromURL(datasetURL))
+  private val rows = reader.allWithHeaders()
 
   private def parseIntoCaseClass(dataset: Map[String, String]): HotelDataset =
     val parsedDataset: HotelDataset = new HotelDataset(
@@ -75,10 +76,10 @@ trait FilteringDatasets:
   def filterColumn[T](filteredKey: HotelDataset => T): List[T] = rows.map(filteredKey)
 end FilteringDatasets
 
+
 trait Normalization:
   def normalize(min: Double, max: Double, value: Double): Double = (value - min) / (max - min)
 end Normalization
-
 
 
 abstract class HotelEDA(val rows: List[HotelDataset]) extends FilteringDatasets:
@@ -98,17 +99,20 @@ class MaxBookCount(rows: List[HotelDataset]) extends HotelEDA(rows):
 end MaxBookCount
 
 class MaxEconomic(rows: List[HotelDataset]) extends HotelEDA(rows) with Normalization:
-  private val filteredList: List[(String, String, String, Double, Double, Double)] = filterColumn(row => (row.hotelName, row.destinationCountry, row.destinationCity, row.bookingPrice, row.discount, row.profitMargin))
+  private val filteredList: List[(String, String, String, Double, Double, Double)] =
+    filterColumn(row => (row.hotelName, row.destinationCountry, row.destinationCity, row.bookingPrice, row.discount, row.profitMargin))
 
-  private val groupedAndAggregatedList: Map[(String, String, String), (Double, Double, Double)] = filteredList.groupBy { case (hotel, country, city, _, _, _) =>
-    (hotel, country, city)
-  }.view.mapValues { row =>
-    val avgPrice = row.map(_._4).sum / row.size
-    val avgDiscount = row.map(_._5).sum / row.size
-    val avgProfit = row.map(_._6).sum / row.size
-    (avgPrice, avgDiscount, avgProfit)
-  }.toMap
+  private val groupedAndAggregatedList: Map[(String, String, String), (Double, Double, Double)] =
+    filteredList.groupBy { case (hotel, country, city, _, _, _) =>
+      (hotel, country, city)
+    }.view.mapValues { row =>
+      val avgPrice = row.map(_._4).sum / row.size
+      val avgDiscount = row.map(_._5).sum / row.size
+      val avgProfit = row.map(_._6).sum / row.size
+      (avgPrice, avgDiscount, avgProfit)
+    }.toMap
 
+  //put it inside the function
   private val minPrice: Double = groupedAndAggregatedList.values.map(_._1).min
   private val maxPrice: Double = groupedAndAggregatedList.values.map(_._1).max
 
@@ -170,7 +174,8 @@ class MaxProfit(rows: List[HotelDataset]) extends HotelEDA(rows) with Normalizat
 end MaxProfit
 
 object Main extends App:
-  val dataset = new CsvReader("src/main/resources/Hotel_Dataset.csv").recordData
+  val datasetURL: URL = getClass.getResource("/Hotel_Dataset.csv")
+  val dataset = new CsvReader(datasetURL).recordData
 
   val analytics: List[HotelEDA] = List(
     new MaxBookCount(dataset),
