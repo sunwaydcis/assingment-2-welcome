@@ -123,14 +123,22 @@ class MaxBookCount(rows: List[HotelDataset]) extends HotelEDA(rows):
     //directly group by country name and count them
     val countryCount: Map[String, Double] = filteredList.groupBy(identity).view.mapValues(_.size.toDouble).toMap
     countryCount
+
+  override def printResult(): Unit =
+    val ranking = rankingDataset()
+    val (country, count) = ranking.maxBy(_._2)
+    println("=== Country with Highest Number of Bookings ===")
+    println(s"Country : $country")
+    println(s"Bookings: ${count.toLong}")
+    println()
 end MaxBookCount
+
 
 class MaxEconomic(rows: List[HotelDataset]) extends HotelEDA(rows) with Normalization:
   private val filteredList: List[(String, String, String, Double, Double, Double)] =
     filterColumn(row => (row.hotelName, row.destinationCountry, row.destinationCity, row.bookingPrice, row.profitMargin, row.discount))
 
   private val groupedAndAggregatedList: Map[(String, String, String), (Double, Double, Double)] = {
-    //group the list by a composite key to get unique hotel, _ acts as a placeholder
     filteredList.groupBy { case (hotel, country, city, _, _, _) =>
       (hotel, country, city)
     }.view.mapValues { row =>
@@ -143,7 +151,6 @@ class MaxEconomic(rows: List[HotelDataset]) extends HotelEDA(rows) with Normaliz
 
   private val normalizedList: Map[(String, String, String), List[Double]] =
     normalize(groupedAndAggregatedList).map { case (k, values) =>
-      //reversing data normalization for booking price and profit margin as lower is better
       val reversed = values.zipWithIndex.map { case (v, i) =>
         if (i < 2) 1.0 - v else v
       }
@@ -151,36 +158,72 @@ class MaxEconomic(rows: List[HotelDataset]) extends HotelEDA(rows) with Normaliz
     }
 
   override def rankingDataset(): Map[(String, String, String), Double] =
-    val ranking = normalizedList.view.mapValues { values =>
+    normalizedList.view.mapValues { values =>
       val sum = values.sum
-      val avg = sum / values.length
-      avg
+      sum / values.length
     }.toMap
-    ranking
+
+  override def printResult(): Unit =
+    val ranking = rankingDataset()
+    val (hotelKey, score) = ranking.maxBy(_._2)
+    val (hotelName, country, city) = hotelKey
+    val (avgPrice, avgDiscountRaw, avgProfitRaw) = groupedAndAggregatedList.getOrElse(hotelKey, (0.0, 0.0, 0.0))
+
+    println("=== Most Economical Hotel ===")
+    println(s"Hotel  : $hotelName")
+    println(s"Country: $country")
+    println(s"City   : $city")
+    println()
+    println(f"Average booking price : SGD ${avgPrice}%.2f")
+    println(f"Average discount      : ${avgDiscountRaw * 100}%.2f%%")
+    println(f"Average profit margin : ${avgProfitRaw}%.4f")
+    println(f"Economy Score         : $score%.4f")
+    println()
+  end printResult
+
 end MaxEconomic
+
 
 class MaxProfit(rows: List[HotelDataset]) extends HotelEDA(rows) with Normalization:
   private val filteredList: List[(String, String, String, Double, Double)] = filterColumn(row =>
     (row.hotelName, row.destinationCountry, row.destinationCity, row.numberOfPeople, row.profitMargin))
 
-  private val groupedAndAggregatedList: Map[(String, String, String), (Double, Double)] = filteredList.groupBy { case (hotel, country, city, _, _) =>
-    (hotel, country, city)
-  }.view.mapValues { row =>
-    val totalPeople = row.map(_._4).sum
-    val avgProfit = row.map(_._5).sum / row.size
-    (totalPeople, avgProfit)
-  }.toMap
+  private val groupedAndAggregatedList: Map[(String, String, String), (Double, Double)] =
+    filteredList.groupBy { case (hotel, country, city, _, _) =>
+      (hotel, country, city)
+    }.view.mapValues { row =>
+      val totalPeople = row.map(_._4).sum
+      val avgProfit = row.map(_._5).sum / row.size
+      (totalPeople, avgProfit)
+    }.toMap
 
-  private val normalizedList: Map[(String, String, String), List[Double]] = normalize(groupedAndAggregatedList)
+  private val normalizedList: Map[(String, String, String), List[Double]] =
+    normalize(groupedAndAggregatedList)
 
   override def rankingDataset(): Map[(String, String, String), Double] =
-    val ranking = normalizedList.view.mapValues { values =>
+    normalizedList.view.mapValues { values =>
       val sum = values.sum
-      val avg = sum / values.length
-      avg
+      sum / values.length
     }.toMap
-    ranking
+
+  override def printResult(): Unit =
+    val ranking = rankingDataset()
+    val (hotelKey, score) = ranking.maxBy(_._2)
+    val (hotelName, country, city) = hotelKey
+    val (totalPeople, avgProfit) = groupedAndAggregatedList(hotelKey)
+
+    println("=== Most Profitable Hotel ===")
+    println(s"Hotel  : $hotelName")
+    println(s"Country: $country")
+    println(s"City   : $city")
+    println()
+    println(s"Total Visitors       : ${totalPeople.toLong}")
+    println(f"Average Profit Margin: $avgProfit%.4f")
+    println(f"Profitability Score  : $score%.4f")
+    println()
 end MaxProfit
+
+
 
 object Main extends App:
   val datasetURL: URL = getClass.getResource("/Hotel_Dataset.csv")
